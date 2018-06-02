@@ -10,6 +10,8 @@ from my.tensorflow import get_initializer
 from my.tensorflow.nn import softsel, get_logits, highway_network, multi_conv1d
 from my.tensorflow.rnn import bidirectional_dynamic_rnn
 from my.tensorflow.rnn_cell import SwitchableDropoutWrapper, AttentionCell
+# import PTR Cell
+from basic.ptr_cell import PTRCell
 
 
 def get_multi_gpu_models(config):
@@ -133,13 +135,21 @@ class Model(object):
                 tf.get_variable_scope().reuse_variables()
                 qq = highway_network(qq, config.highway_num_layers, True, wd=config.wd, is_train=self.is_train)
 
+        # xx input sentence, qq query
         self.tensor_dict['xx'] = xx
         self.tensor_dict['qq'] = qq
 
-        cell_fw = BasicLSTMCell(d, state_is_tuple=True)
-        cell_bw = BasicLSTMCell(d, state_is_tuple=True)
+        # for word embedding
+        #cell_fw = BasicLSTMCell(d, state_is_tuple=True)
+        #cell_bw = BasicLSTMCell(d, state_is_tuple=True)
+        # use PTR cell
+        normal_initializer = tf.random_normal_initializer(stddev=0.1)
+        cell_fw = PTRCell( kernel_initializer=normal_initializer, recurrent_initializer=normal_initializer, bias_initializer=normal_initializer, dEmb=100) 
+        cell_bw = PTRCell( kernel_initializer=normal_initializer, recurrent_initializer=normal_initializer, bias_initializer=normal_initializer, dEmb=100) 
+
         d_cell_fw = SwitchableDropoutWrapper(cell_fw, self.is_train, input_keep_prob=config.input_keep_prob)
         d_cell_bw = SwitchableDropoutWrapper(cell_bw, self.is_train, input_keep_prob=config.input_keep_prob)
+
         cell2_fw = BasicLSTMCell(d, state_is_tuple=True)
         cell2_bw = BasicLSTMCell(d, state_is_tuple=True)
         d_cell2_fw = SwitchableDropoutWrapper(cell2_fw, self.is_train, input_keep_prob=config.input_keep_prob)
@@ -156,7 +166,11 @@ class Model(object):
         q_len = tf.reduce_sum(tf.cast(self.q_mask, 'int32'), 1)  # [N]
 
         with tf.variable_scope("prepro"):
-            (fw_u, bw_u), ((_, fw_u_f), (_, bw_u_f)) = bidirectional_dynamic_rnn(d_cell_fw, d_cell_bw, qq, q_len, dtype='float', scope='u1')  # [N, J, d], [N, d]
+            #(fw_u, bw_u), ((_, fw_u_f), (_, bw_u_f)) = bidirectional_dynamic_rnn(d_cell_fw, d_cell_bw, qq, q_len, dtype='float', scope='u1')  # [N, J, d], [N, d]
+
+            # PTR bidir
+            (fw_u, bw_u), _ = bidirectional_dynamic_rnn(d_cell_fw, d_cell_bw, qq, q_len, dtype='float', scope='u1')  # [N, J, d], [N, d]
+
             u = tf.concat(axis=2, values=[fw_u, bw_u])
             if config.share_lstm_weights:
                 tf.get_variable_scope().reuse_variables()
