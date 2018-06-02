@@ -1,7 +1,7 @@
 # Bi-directional Attention Flow for Machine Comprehension
  
 - This the original implementation of [Bi-directional Attention Flow for Machine Comprehension][paper] (Seo et al., 2016).
-- This is tensorflow v1.2 comaptible version. Compatible save files are at [v0.3.0][v0.3.0].
+- This is tensorflow v1.7 comaptible version. 
 - The CodaLab worksheet for the [SQuAD Leaderboard][squad] submission is available [here][worksheet].
 - Please contact [Minjoon Seo][minjoon] ([@seominjoon][minjoon-github]) for questions and suggestions.
 
@@ -11,7 +11,7 @@
 - unzip
 
 #### Python Packages
-- tensorflow (deep learning library, verified on 1.1.0)
+- tensorflow (deep learning library, verified on 1.7.0)
 - nltk (NLP tools, verified on 3.2.1)
 - tqdm (progress bar, verified on 4.7.4)
 - jinja2 (for visaulization; if you only train and test, not needed)
